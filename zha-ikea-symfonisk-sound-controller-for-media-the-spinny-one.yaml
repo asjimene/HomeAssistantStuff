@@ -1,0 +1,121 @@
+blueprint:
+  name: ZHA - IKEA Symfonisk sound controller for media
+  description: 'Control media with an IKEA Symfonisk sound controller (the spinny
+    ones).
+
+    Single press will toggle Play/Pause on your selected media player.
+
+    You can set functions for double press and triple press.
+
+    Rotating left/right will change the volume smoothly of the selected media player,
+    if that function is possible.'
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: IKEA Symfonisk controller to use
+      selector:
+        device:
+          integration: zha
+          manufacturer: IKEA of Sweden
+          model: SYMFONISK Sound Controller
+    media_player:
+      name: Media Player
+      description: The media player to control
+      selector:
+        target:
+          entity:
+            domain: media_player
+    volume_delay:
+      name: Volume stepping delay
+      description: The minimal delay in milliseconds between sending new volume adjustments.
+      default: 500
+      selector:
+        number:
+          min: 100
+          max: 1000
+          step: 100
+          unit_of_measurement: "msec"
+          mode: slider
+    single_press:
+      name: Single press
+      description: Action to run on double press
+      default: []
+      selector:
+        action: {}
+    double_press:
+      name: Double press
+      description: Action to run on double press
+      default: []
+      selector:
+        action: {}
+    triple_press:
+      name: Triple press
+      description: Action to run on triple press
+      default: []
+      selector:
+        action: {}
+  source_url: https://community.home-assistant.io/t/zha-ikea-symfonisk-sound-controller-for-media-the-spinny-one/266130
+mode: single
+max_exceeded: silent
+trigger:
+- device_id: !input 'remote'
+  id: press_single
+  domain: zha
+  platform: device
+  type: remote_button_short_press
+  subtype: turn_on
+- device_id: !input 'remote'
+  id: press_double
+  domain: zha
+  platform: device
+  type: remote_button_double_press
+  subtype: turn_on
+- device_id: !input 'remote'
+  id: press_triple
+  domain: zha
+  platform: device
+  type: remote_button_triple_press
+  subtype: turn_on
+- device_id: !input 'remote'
+  id: rotate_right
+  domain: zha
+  platform: device
+  type: device_rotated
+  subtype: right
+- device_id: !input 'remote'
+  id: rotate_left
+  domain: zha
+  platform: device
+  type: device_rotated
+  subtype: left
+action:
+- choose:
+  - conditions:
+    - condition: trigger
+      id: press_single
+    sequence: !input 'single_press'
+  - conditions:
+    - condition: trigger
+      id: press_double
+    sequence: !input 'double_press'
+  - conditions:
+    - condition: trigger
+      id: press_triple
+    sequence: !input 'triple_press'
+  - conditions:
+    - condition: trigger
+      id: rotate_right
+    sequence:
+    - service: media_player.volume_up
+      target: !input 'media_player'
+    - delay: 
+        milliseconds: !input 'volume_delay'
+  - conditions:
+    - condition: trigger
+      id: rotate_left
+    sequence:
+    - service: media_player.volume_down
+      target: !input 'media_player'
+    - delay: 
+        milliseconds: !input 'volume_delay'
